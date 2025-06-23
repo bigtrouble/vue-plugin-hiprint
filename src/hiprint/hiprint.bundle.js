@@ -45,8 +45,7 @@ import "./plugins/qrcode.js";
 import bwipjs from "bwip-js"
 // 水印
 import watermark from "./plugins/watermark.js";
-// 直接打印需要
-import {io} from "socket.io-client";
+
 //引入标尺
 import lImg from "./css/image/l_img.svg";
 import vImg from "./css/image/v_img.svg";
@@ -61,8 +60,7 @@ import Canvg from 'canvg';
 import defaultTypeProvider from "./etypes/default-etyps-provider";
 
 window.$ = window.jQuery = $;
-window.autoConnect = true;
-window.io = io;
+window.autoConnect = false;
 
 var languages = {}
 const ctx = require.context("../i18n", true, /\.json$/);
@@ -7732,180 +7730,6 @@ var hiprint = function (t) {
     noDrag: !1
   };
 }, function (t, e) {
-  var n, i;
-  jQuery, n = "connected", i = "reconnecting", window.hiwebSocket = {
-    opened: !1,
-    name: "webSockets",
-    host: "http://localhost:17521",
-    token: 'vue-plugin-hiprint',
-    reconnectTimeout: 6e4,
-    reconnectWindowSetTimeout: null,
-    reconnectDelay: 2e3,
-    supportsKeepAlive: function supportsKeepAlive() {
-      return !0;
-    },
-    hasIo: function hasIo(t) {
-      return window.io;
-    },
-    send: function send(t) {
-      try {
-        this.socket.emit("news", t);
-      } catch (e) {
-        console.log("send data error:" + (t || "") + JSON.stringify(e));
-      }
-    },
-    sendByFragments: function(content) {
-      try {
-        const {
-          fragmentSize =  50000, // 单片字符长度
-          sendInterval = 10,  // 分批传输间隔
-          html,
-          generateHTMLInterval, // 不需要传给client,取出字段
-          printByFragments, // 不需要传给client,取出字段
-          ...otherFields
-        } = content
-        const contentToSplit = content.html
-        // 字符总数
-        const charsCount = contentToSplit.length
-        // 片段总数
-        const fragmentsCount = Math.ceil(charsCount / fragmentSize)
-        Array.apply(undefined, { length: fragmentsCount }).forEach((item, index) => {
-          const startIndex = index * fragmentSize
-          // 字符结束索引
-          const endIndex = index + 1 === fragmentSize ? charsCount : (index + 1) * fragmentSize
-          // socket分段发送内容
-          setTimeout(() => {
-            this.socket.emit('printByFragments', {
-              ...otherFields,
-              index,
-              total: fragmentsCount,
-              htmlFragment: html.slice(startIndex, endIndex)
-            });
-          }, sendInterval * index);
-        })
-      } catch (e) {
-        console.log("send data fragment error:" + (content || "") + JSON.stringify(e));
-      }
-    },
-    getPrinterList: function getPrinterList() {
-      return this.printerList;
-    },
-    refreshPrinterList: function refreshPrinterList() {
-      try {
-        this.socket.emit("refreshPrinterList");
-      } catch (e) {
-        console.log("refreshPrinterList error:" + JSON.stringify(e));
-      }
-    },
-    getPaperSizeInfo: function getPaperSizeInfo(printer) {
-      try {
-        console.warn("getPaperSizeInfo 是一个测试功能，仅win客户端支持该api！")
-        this.socket.emit("getPaperSizeInfo", printer);
-      } catch (e) {
-        console.log("getPaperSizeInfo error:" + JSON.stringify(e))
-      }
-    },
-    getClients: function getClients() {
-      try {
-        this.socket.emit("getClients");
-      } catch (e) {
-        console.log("getClients error:" + JSON.stringify(e));
-      }
-    },
-    getClientInfo: function getClientInfo() {
-      try {
-        this.socket.emit("getClientInfo");
-      } catch (e) {
-        console.log("getClientInfo error:" + JSON.stringify(e))
-      }
-    },
-    getAddress: function getAddress(type, ...args) {
-      try {
-        this.socket.emit("address", type, ...args);
-      } catch (e) {
-        console.log("getAddress error:" + JSON.stringify(e));
-      }
-    },
-    ippPrint: function ippPrint(options) {
-      try {
-        this.socket.emit("ippPrint", options);
-      } catch (e) {
-        console.log("ippPrint error:" + JSON.stringify(e));
-      }
-    },
-    ippRequest: function ippRequest(options) {
-      try {
-        this.socket.emit("ippRequest", options);
-      } catch (e) {
-        console.log("ippRequest error:" + JSON.stringify(e));
-      }
-    },
-    setHost: function (host, token, cb) {
-      if (typeof token === "function") {
-        cb = token
-        token = undefined
-      }
-      this.host = host
-      this.token = token
-      this.stop()
-      this.start(cb)
-    },
-    start: function start(cb) {
-      var _this = this;
-
-      var t = this;
-      window.WebSocket ? this.socket || (this.socket = window.io(this.host, {
-        transports: ['websocket'],
-        reconnectionAttempts: 5,
-        auth: {
-          token: this.token
-        }
-      }), this.socket.on("connect", function (e) {
-        t.opened = !0, console.log("Websocket opened."),
-        _this.socket.on("success", function (t) {
-          hinnn.event.trigger("printSuccess_" + t.templateId, t);
-        }), _this.socket.on("error", function (t) {
-          hinnn.event.trigger("printError_" + t.templateId, t);
-        }), _this.socket.on("clients", function(clients) {
-          t.clients = clients;
-          hinnn.event.trigger("clients", clients)
-        }), _this.socket.on("clientInfo", function(clientInfo) {
-          t.clientInfo = clientInfo
-          hinnn.event.trigger("clientInfo", clientInfo)
-        }), _this.socket.on("printerList", function (e) {
-          t.printerList = e;
-          hinnn.event.trigger("printerList", e);
-        }), _this.socket.on("paperSizeInfo", function(e) {
-          t.paperSize = Array.isArray(e)?e:[e]
-          hinnn.event.trigger("paperSizeInfo", t.paperSize);
-        }), _this.socket.on("address", function (type, addr, e) {
-          hinnn.event.trigger("address_" + type, {'addr': addr, 'e': e});
-        }), _this.socket.on("ippPrinterConnected", function (printer) {
-          hinnn.event.trigger("ippPrinterConnected", printer);
-        }), _this.socket.on("ippPrinterCallback", function (err, res) {
-          hinnn.event.trigger("ippPrinterCallback", {'err': err, 'res': res});
-        }), _this.socket.on("ippRequestCallback", function (err, res) {
-          hinnn.event.trigger("ippRequestCallback", {'err': err, 'res': res});
-        }), t.state = n;
-        cb && cb(true, e);
-      }), this.socket.on("connect_error", function (e) {
-        console.error(e)
-        hinnn.event.trigger("connect_error", e)
-      }), this.socket.on("disconnect", function () {
-        t.opened = !1;
-        cb && cb(false);
-      })) : console.log("WebSocket start fail"), cb && cb(false);
-    },
-    reconnect: function reconnect() {
-      this.state !== n && this.state !== i || (this.stop(), this.ensureReconnectingState() && (console.log("Websocket reconnecting."), this.start()));
-    },
-    stop: function stop() {
-      this.socket && (console.log("Closing the Websocket."), this.socket.close(), this.socket = null, this.printerList = []);
-    },
-    ensureReconnectingState: function ensureReconnectingState() {
-      return this.state = i, this.state === i;
-    }
-  };
 }, function (t, e, n) {
   var i = n(28);
   "string" == typeof i && (i = [[t.i, i, ""]]);
@@ -10792,23 +10616,8 @@ var hiprint = function (t) {
           }
         }
       }, t.prototype.xhrLoadImage = function (t) {
-      }, t.prototype.sentToClient = function (t, e, n) {
-        e || (e = {});
-        var i = $.extend({}, n || {});
-        i.imgToBase64 = i.imgToBase64 ?? false;
-        if (i.printByFragments) {
-          // 分批打印
-          this.getHtmlAsync(e, i)
-            .then(rootElement => {
-              var o = t + rootElement[0].outerHTML;
-              i.id = s.a.instance.guid(), i.html = o, i.templateId = this.id, hiwebSocket.sendByFragments(i, n);
-            })
-        } else {
-          // 同步打印
-          var o = t + this.getHtml(e, i)[0].outerHTML;
-          i.id = s.a.instance.guid(), i.html = o, i.templateId = this.id, hiwebSocket.send(i);
-        }
-      }, t.prototype.printByHtml = function (t) {
+      }, 
+      t.prototype.printByHtml = function (t) {
         $(t).hiwprint();
       }, t.prototype.printByHtml2 = function (t, e) {
         if (e || (e = {}), this.clientIsOpened()) {
@@ -10830,7 +10639,7 @@ var hiprint = function (t) {
 
                 var d = p + $(t)[0].outerHTML,
                   c = $.extend({}, e || {});
-                c.id = s.a.instance.guid(), c.html = d, c.templateId = n.id, hiwebSocket.send(c);
+                c.id = s.a.instance.guid(), c.html = d, c.templateId = n.id;
               }
             }, l.send();
           });
@@ -10917,12 +10726,8 @@ var hiprint = function (t) {
       }, t.prototype.on = function (t, e) {
         o.a.event.clear(t + "_" + this.id);
         o.a.event.on(t + "_" + this.id, e);
-      }, t.prototype.clientIsOpened = function () {
-        return hiwebSocket.opened;
-      }, t.prototype.getPrinterList = function () {
-        var t = hiwebSocket.getPrinterList();
-        return t || [];
-      }, t.prototype.getElementByTid = function (t, e) {
+      }, 
+      t.prototype.getElementByTid = function (t, e) {
         return null == e && (e = 0), this.printPanels[e].getElementByTid(t);
       }, t.prototype.getElementByName = function (t, e) {
         return null == e && (e = 0), this.printPanels[e].getElementByName(t);
@@ -11203,12 +11008,6 @@ var hiprint = function (t) {
     p.a.instance.init(t), p.a.instance.providers && p.a.instance.providers.forEach(function (t) {
       t.addElementTypes(a.instance);
     });
-    if (window.autoConnect && (p.a.instance.host != hiwebSocket.host || p.a.instance.token != hiwebSocket.token)) {
-      hiwebSocket.stop()
-      p.a.instance.host && (hiwebSocket.host = p.a.instance.host);
-      p.a.instance.token && (hiwebSocket.token = p.a.instance.token);
-      hiwebSocket.start()
-    }
     if (p.a.instance.lang && Object.keys(languages).includes(p.a.instance.lang)) {
       i18n.lang = p.a.instance.lang;
     } else {
@@ -11293,39 +11092,6 @@ var hiprint = function (t) {
   function rpl(c) {
     p.a.instance.clear("printerList");
     p.a.instance.on("printerList", c);
-    hiwebSocket.refreshPrinterList();
-  }
-
-  function getClients(c) {
-    p.a.instance.clear("clients");
-    p.a.instance.on("clients", c);
-    hiwebSocket.getClients();
-  }
-
-  function getClientInfo(c) {
-    p.a.instance.clear("clientInfo");
-    p.a.instance.on("getClientInfo", c);
-    hiwebSocket.getClientInfo()
-  }
-
-  function getAddr(type, c, ...args) {
-    p.a.instance.clear("address_" + type);
-    p.a.instance.on("address_" + type, c);
-    hiwebSocket.getAddress(type, ...args);
-  }
-
-  function ippPrint(options, callback, connected) {
-    p.a.instance.clear("ippPrinterCallback");
-    p.a.instance.on("ippPrinterCallback", callback);
-    p.a.instance.clear("ippPrinterConnected");
-    p.a.instance.on("ippPrinterConnected", connected);
-    hiwebSocket.ippPrint(options);
-  }
-
-  function ippRequest(options, callback) {
-    p.a.instance.clear("ippRequestCallback");
-    p.a.instance.on("ippRequestCallback", callback);
-    hiwebSocket.ippRequest(options);
   }
 
   n.d(e, "init", function () {
@@ -11334,23 +11100,19 @@ var hiprint = function (t) {
     return cig;
   }), n.d(e, "updateElementType", function () {
     return uep;
-  }), n.d(e, "hiwebSocket", function () {
-    return hiwebSocket;
-  }), n.d(e, "refreshPrinterList", function () {
+  }), 
+  
+  
+  n.d(e, "refreshPrinterList", function () {
     return rpl;
-  }), n.d(e, "getClients", function() {
-    return getClients;
-  }), n.d(e, "getClientInfo", function() {
-    return getClientInfo;
-  }), n.d(e, "getAddress", function () {
-    return getAddr;
-  }), n.d(e, "ippPrint", function () {
-    return ippPrint;
-  }), n.d(e, "ippRequest", function () {
-    return ippRequest;
-  }), n.d(e, "PrintElementTypeManager", function () {
+  }), 
+  
+  
+  n.d(e, "PrintElementTypeManager", function () {
     return it;
-  }), n.d(e, "PrintElementTypeGroup", function () {
+  }), 
+  
+  n.d(e, "PrintElementTypeGroup", function () {
     return ot;
   }), n.d(e, "PrintTemplate", function () {
     return ct;
@@ -11362,10 +11124,6 @@ var hiprint = function (t) {
     return gt;
   }), $(document).ready(function () {
     console.log('document ready');
-    console.log(window.autoConnect);
-    if (hiwebSocket.hasIo() && window.autoConnect) {
-      hiwebSocket.start();
-    }
   });
 }]);
 

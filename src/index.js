@@ -9,34 +9,9 @@ import "./hiprint/css/print-lock.css"
 
 import {version} from '../package.json'
 
-/**
- * 自动连接 / 连接
- * cb: 连接回调， (status, msg) {
- *   // status: true/false
- *   // msg: status == true 时 返回socket.connect回调 e
- * }
- */
-let autoConnect = function(cb) {
-  console.log('autoConnect');
-  window.autoConnect = true;
-  window.hiwebSocket && window.hiwebSocket.hasIo() && window.hiwebSocket.start(cb);
-};
-
-/**
- * 取消自动连接 / 断开连接
- */
-let disAutoConnect = function() {
-  console.log('disAutoConnect');
-  window.autoConnect = false;
-  window.hiwebSocket && window.hiwebSocket.hasIo() && window.hiwebSocket.stop();
-};
-
 let hiPrintPlugin = {
-  disAutoConnect,
-  install: function (Vue, name = '$hiPrint', autoConnect = true) {
-    if (!autoConnect) {
-      disAutoConnect();
-    }
+
+  install: function (Vue, name = '$hiPrint') {
     let globalVue = Vue.prototype || Vue.config.globalProperties;
     globalVue[name] = hiprint;
     /**
@@ -78,8 +53,6 @@ hiprint.version = version
 
 window.hiprint = hiprint;
 export {
-  autoConnect,
-  disAutoConnect,
   hiprint,
   hiPrintPlugin,
   defaultElementTypeProvider,

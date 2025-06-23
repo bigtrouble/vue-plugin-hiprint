@@ -39,12 +39,6 @@ module.exports = {
       amd: "jsbarcode",
       root: "JsBarcode",
     },
-    "socket.io-client": {
-      commonjs: "socket.io-client",
-      commonjs2: "socket.io-client",
-      amd: "socket.io-client",
-      root: "io",
-    },
     "@wtto00/html2canvas": "html2canvas",
     canvg: 'canvg',
     jspdf: "jspdf",
